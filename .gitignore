@@ -1,0 +1,10 @@
+tmp/
+.env.local
+*.tmp
+*.bak
+*.swp
+*~.nib
+
+### Composer ###
+vendor/
+autotune.json

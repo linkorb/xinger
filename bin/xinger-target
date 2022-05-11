@@ -1,0 +1,53 @@
+#!/usr/bin/php
+<?php
+
+use Symfony\Component\Dotenv\Dotenv;
+
+require_once __DIR__ . '/../vendor/autoload.php';
+
+$filename = 'php://stdin';
+
+
+$dotenv = new Dotenv();
+$dotenv->usePutenv();
+$dotenv->load(__DIR__.'/../.env', __DIR__.'/../.env.local');
+
+$targetName = $argv[1] ?? null;
+if (!$targetName) {
+  throw new RuntimeException("Target name should be specified as the first argument.");
+}
+
+// TODO: dynamically resolve and configure tap/target classes
+switch ($targetName) {
+    case 'mysql':
+        $dsn = getenv('XINGER_TARGET_MYSQL_DSN');
+        $tableName = getenv('XINGER_TARGET_MYSQL_TABLE');
+        if (!$dsn) {
+          throw new RuntimeException("XINGER_TARGET_MYSQL_DSN not specified. Required");
+        }
+        if (!$tableName) {
+          throw new RuntimeException("XINGER_TARGET_MYSQL_TABLE not specified. Required");
+        }
+        $target = new \Xinger\Target\MysqlTarget($dsn, $tableName);
+        break;
+    default:
+        throw new RuntimeException('Unknown target: ' . $targetName);
+}
+
+
+
+
+$target->open();
+
+$handle = fopen($filename, "r");
+while (($line = fgets($handle, 4096)) !== false) {
+  $line = trim($line);
+  $row = json_decode($line, true);
+  if (($row['type'] ?? null)=='RECORD') {
+    $target->applyRecord($row);
+  }
+}
+
+fclose($handle);
+$target->close();
+echo "CLOSED\n";

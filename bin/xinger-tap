@@ -1,0 +1,47 @@
+#!/usr/bin/php
+<?php
+
+use Symfony\Component\Dotenv\Dotenv;
+
+require_once __DIR__ . '/../vendor/autoload.php';
+
+
+$dotenv = new Dotenv();
+$dotenv->usePutenv();
+$dotenv->load(__DIR__.'/../.env', __DIR__.'/../.env.local');
+
+$tapName = $argv[1] ?? null;
+if (!$tapName) {
+  throw new RuntimeException("Tap name should be specified as the first argument.");
+}
+
+// TODO: dynamically resolve and configure tap/target classes
+switch ($tapName) {
+    case 'ndjson':
+        $filename = getenv('XINGER_TAP_NDJSON_FILENAME');
+        if (!$filename) {
+            throw new RuntimeException("XINGER_TAP_NDJSON_FILENAME not specified. Required");
+        }
+        if (!file_exists($filename)) {
+            throw new RuntimeException("XINGER_TAP_NDJSON_FILENAME not found: " . $filename);
+        }
+        $tap = new \Xinger\Tap\NdjsonTap($filename);
+        break;
+    default:
+        throw new RuntimeException('Unknown tap: ' . $tapName);
+}
+
+$tap->open();
+
+while ($row=$tap->getRecord()) {
+  $data = [
+    'type' => 'RECORD',
+    'stream' => 'main',
+    'time_extracted' => date('c'),
+    'record' => $row,
+  ];
+  $line = json_encode($data, JSON_UNESCAPED_SLASHES) . "\n";
+  echo $line;
+  //print_r($row);
+}
+$tap->close();
