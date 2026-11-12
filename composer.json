@@ -18,7 +18,8 @@
     "linkorb/connector": "^1.4"
   },
   "require-dev": {
-    "linkorb/autotune": "^1.0"
+    "linkorb/autotune": "^1.0",
+    "phpunit/phpunit": "^9.6"
   },
   "autoload": {
     "psr-4": {
